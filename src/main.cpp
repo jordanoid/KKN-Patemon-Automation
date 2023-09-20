@@ -13,17 +13,17 @@ RtcDS1302<ThreeWire> Rtc(myWire);
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
-const int relayPin = 16;
-const int flowRateLPH = 300; // Flow rate in liters per hour
+const int relayPin[8] = {13, 12, 14, 27, 26, 25, 33, 32};
+int soilPin[4] = {A0, A3, A6, A7};
+const int flowRateLPH = 1800; // Flow rate in liters per hour
 const int desiredVolumeMLPerPlant = 500; // Desired volume
-const int plantRows = 16;
+const int plantRows = 4;
 const int plantPerRows = 20;
 float wateringDurationSeconds;
-int soilPin = A0;
 
-int readSoilMoisture() {
+int readSoilMoisture(int index) {
    // Read the analog value from the soil moisture sensor
-   int sensorValue = analogRead(soilPin); // Connect the sensor to an appropriate pin
+   int sensorValue = analogRead(soilPin[index]); // Connect the sensor to an appropriate pin
    // Convert the sensor value to a moisture percentage
    // int moisturePercentage = ( 100 - ( (sensorValue/4095) * 100 ) );
    int moisturePercentage = map(sensorValue, 0, 4095, 100, 0);
@@ -48,15 +48,15 @@ void timedWaterPlant(float durationSeconds, int nowSecond, int nowMinute) {
    if(nowSecond + nowMinute*60 < durationSeconds){
       // lcd.setCursor(0, 2);
       // lcd.print("WaterPlant");
-      digitalWrite(relayPin, HIGH);
+      digitalWrite(relayPin[0], HIGH);
       lcd.setCursor(0, 3);
-      lcd.print("Time Left :");
-      lcd.print(durationSeconds - (nowSecond + nowMinute*60));
+      // lcd.print("Time Left :");
+      // lcd.print(durationSeconds - (nowSecond + nowMinute*60));
    }
    else if(nowSecond + nowMinute*60 > durationSeconds){
       // lcd.setCursor(0, 2);
       // lcd.print("StopWaterPlant");
-      digitalWrite(relayPin, LOW);
+      digitalWrite(relayPin[0], LOW);
    }
 
 }
@@ -64,12 +64,11 @@ void timedWaterPlant(float durationSeconds, int nowSecond, int nowMinute) {
 void soilWaterPlant(int soilRead) {
 
    if(soilRead <= 50){
-      digitalWrite(relayPin, HIGH);
+      digitalWrite(relayPin[0], HIGH);
       lcd.setCursor(0, 3);
-      lcd.print("WaterPlant");
    }
-   else if(soilRead > 50){
-      digitalWrite(relayPin, LOW);
+   else{
+      digitalWrite(relayPin[0], LOW);
    }
 
 }
@@ -87,9 +86,13 @@ float calculateWateringDuration(float flowRateLPH, float desiredVolumeMLPerPlant
 
 void setup() {
    Serial.begin(115200);
-   pinMode(relayPin, OUTPUT);
-   pinMode(soilPin, INPUT);
-
+   for(int i = 0; i < 8; i++){
+       pinMode(relayPin[i], OUTPUT);
+   }
+   for(int i = 0; i < 4; i++){
+       pinMode(soilPin[i], INPUT);
+   }
+   
    Rtc.Begin();
 
    RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
@@ -132,8 +135,17 @@ void loop() {
    lcd.print("%");
 
    lcd.setCursor(0, 2);
-   lcd.print("Soil:");
-   lcd.print(readSoilMoisture());
+   lcd.print("Soil: ");
+   lcd.print(readSoilMoisture(0));
+   lcd.print(" ");
+   lcd.print(readSoilMoisture(1));
+   lcd.print(" ");
+   lcd.print(readSoilMoisture(2));
+   lcd.print(" ");
+   lcd.print(readSoilMoisture(3));
+
+   lcd.setCursor(0, 3);
+   lcd.print(wateringDurationSeconds);
 
 
    int nowHour = now.Hour();
@@ -145,9 +157,7 @@ void loop() {
       // }
       timedWaterPlant(wateringDurationSeconds, now.Second(), now.Minute());
    }else{
-      if(readSoilMoisture() <= 30){
-         soilWaterPlant(readSoilMoisture());
-      } // Delay for 1 second between readings
+      soilWaterPlant(readSoilMoisture(0));
    }
    // Other tasks or sensor readings can be added here
    // ...
