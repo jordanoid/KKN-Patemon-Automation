@@ -63,12 +63,12 @@ void timedWaterPlant(float durationSeconds, int nowSecond, int nowMinute) {
 
 void soilWaterPlant(int soilRead) {
 
-   if(soilRead <= 40){
+   if(soilRead <= 50){
       digitalWrite(relayPin, HIGH);
       lcd.setCursor(0, 3);
       lcd.print("WaterPlant");
    }
-   else if(soilRead > 40){
+   else if(soilRead > 50){
       digitalWrite(relayPin, LOW);
    }
 
@@ -145,8 +145,8 @@ void loop() {
       // }
       timedWaterPlant(wateringDurationSeconds, now.Second(), now.Minute());
    }else{
-      if(readSoilMoisture() < 30){
-      soilWaterPlant(readSoilMoisture());
+      if(readSoilMoisture() <= 30){
+         soilWaterPlant(readSoilMoisture());
       } // Delay for 1 second between readings
    }
    // Other tasks or sensor readings can be added here
