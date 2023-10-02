@@ -13,7 +13,7 @@ RtcDS1302<ThreeWire> Rtc(myWire);
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
-const int relayPin[4] = {13, 12, 14, 27}; // Relay pins for each soil sensor
+int relayPin[5] = {13, 12, 14, 27, 26}; // Relay pins for each soil sensor, including the new relay
 int soilPin[4] = {A0, A3, A6, A7};
 const int desiredMoistureLevel = 50; // Adjust the desired moisture level as needed
 
@@ -29,7 +29,7 @@ int readSoilMoisture(int index) {
 
 void setup() {
    Serial.begin(115200);
-   for(int i = 0; i < 4; i++){
+   for(int i = 0; i < 5; i++){
        pinMode(relayPin[i], OUTPUT);
    }
    for(int i = 0; i < 4; i++){
@@ -91,12 +91,18 @@ void loop() {
       if (soilReadings[i] <= desiredMoistureLevel) {
          // Soil is too dry, activate the corresponding relay
          digitalWrite(relayPin[i], HIGH);
+         digitalWrite(relayPin[4], HIGH);
       } else {
          // Soil is moist enough, deactivate the corresponding relay
          digitalWrite(relayPin[i], LOW);
       }
    }
 
+   if(soilReadings[0] > desiredMoistureLevel && soilReadings[1] > desiredMoistureLevel && soilReadings[2] > desiredMoistureLevel  && soilReadings[3] > desiredMoistureLevel ){
+      digitalWrite(relayPin[4], LOW);
+   }
+
+   // Control the new relay based on whether any other relay is ON
    // Other tasks or sensor readings can be added here
    // ...
    delay(1000);
