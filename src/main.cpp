@@ -29,17 +29,18 @@ int readSoilMoisture(int index) {
 
 void setup() {
    Serial.begin(115200);
-   for(int i = 0; i < 5; i++){
-       pinMode(relayPin[i], OUTPUT);
-   }
    for(int i = 0; i < 4; i++){
+       pinMode(relayPin[i], OUTPUT);
+       digitalWrite(relayPin[i], LOW);
+   }
+   for(int i = 0; i < 3; i++){
        pinMode(soilPin[i], INPUT);
    }
 
    Rtc.Begin();
 
    RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-   Rtc.SetDateTime(compiled);
+   Rtc.SetDateTime(compiled);  
    dht.begin();
 
    lcd.init();
@@ -78,7 +79,7 @@ void loop() {
 
    lcd.setCursor(0, 3);
    lcd.print("SOIL : ");
-   for (int i = 0; i < 4; i++) {
+   for (int i = 0; i < 3; i++) {
       soilReadings[i] = readSoilMoisture(i);
       lcd.print(soilReadings[i]);
       if (i < 3) {
@@ -87,20 +88,20 @@ void loop() {
    }
 
    // Check soil moisture and control relays
-   for (int i = 0; i < 4; i++) {
-      if (soilReadings[i] <= desiredMoistureLevel) {
+   for (int i = 0; i < 3; i++) {
+      if (soilReadings[i] <= 30) {
          // Soil is too dry, activate the corresponding relay
          digitalWrite(relayPin[i], HIGH);
-         digitalWrite(relayPin[4], HIGH);
-      } else {
+         digitalWrite(relayPin[3], HIGH);
+      } else if (soilReadings[i] > desiredMoistureLevel){
          // Soil is moist enough, deactivate the corresponding relay
          digitalWrite(relayPin[i], LOW);
       }
    }
 
-   if(soilReadings[0] > desiredMoistureLevel && soilReadings[1] > desiredMoistureLevel && soilReadings[2] > desiredMoistureLevel  && soilReadings[3] > desiredMoistureLevel ){
-      digitalWrite(relayPin[4], LOW);
-   }
+   if(soilReadings[0] > desiredMoistureLevel && soilReadings[1] > desiredMoistureLevel && soilReadings[2] > desiredMoistureLevel){
+      digitalWrite(relayPin[3], LOW);
+   }  
 
    // Control the new relay based on whether any other relay is ON
    // Other tasks or sensor readings can be added here
