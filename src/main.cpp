@@ -39,8 +39,8 @@ void setup() {
 
    Rtc.Begin();
 
-   RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-   Rtc.SetDateTime(compiled);  
+   // RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+   // Rtc.SetDateTime(compiled);  
    dht.begin();
 
    lcd.init();
@@ -73,6 +73,7 @@ void loop() {
    lcd.print("T: ");
    lcd.print(temperature);
    lcd.print("C");
+   lcd.setCursor(10, 1);
    lcd.print(" H: ");
    lcd.print(humidity);
    lcd.print("%");
