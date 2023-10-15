@@ -8,12 +8,12 @@
 #define DHT_TYPE DHT22 // Specify the DHT sensor type (DHT11, DHT22, or DHT21)
 DHT dht(DHT_PIN, DHT_TYPE);
 
-ThreeWire myWire(15, 2, 4); // IO, SCLK, CE
+ThreeWire myWire(2, 15, 4); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
-int relayPin[5] = {13, 12, 14, 27, 26}; // Relay pins for each soil sensor, including the new relay
+int relayPin[5] = {14, 12, 13, 27, 26}; // Relay pins for each soil sensor, including the new relay
 int soilPin[4] = {A0, A3, A6, A7};
 const int desiredMoistureLevel = 50; // Adjust the desired moisture level as needed
 
@@ -27,14 +27,25 @@ int readSoilMoisture(int index) {
    return moisturePercentage;
 }
 
+String padding(int numSpaces) { 
+   String spaceString;
+   for (int i = 0; i < numSpaces; i++) {
+    spaceString += ' '; // Concatenate space characters
+   } 
+   return spaceString;
+}
+
 void setup() {
    Serial.begin(115200);
    for(int i = 0; i < 4; i++){
-       pinMode(relayPin[i], OUTPUT);
-       digitalWrite(relayPin[i], LOW);
+      pinMode(relayPin[i], OUTPUT);
+      digitalWrite(relayPin[i], LOW);
+      delay(250);
+      digitalWrite(relayPin[i], HIGH);
+      delay(250);
    }
    for(int i = 0; i < 3; i++){
-       pinMode(soilPin[i], INPUT);
+      pinMode(soilPin[i], INPUT);
    }
 
    Rtc.Begin();
@@ -49,60 +60,83 @@ void setup() {
 }
 
 void loop() {
-   lcd.clear();
-   Serial.println("Begin");
+   // lcd.clear();
+   
    RtcDateTime now = Rtc.GetDateTime();
 
-   // Read DHT22 sensor data
+   // Display Date and Time
+   lcd.setCursor(0, 0);
+   String formattedDateTime = String(now.Year()) + "-" +
+                              String(now.Month()) + "-" +
+                              String(now.Day()) + " " +
+                              String(now.Hour()) + ":" +
+                              String(now.Minute()) + ":" +
+                              String(now.Second());
+   lcd.println(formattedDateTime);
+
+   // lcd.print("Time: ");
+   // if(now.Hour()<10) lcd.print("0");
+   // lcd.print(now.Hour(), DEC);
+   // lcd.print(':');
+   // if(now.Minute()<10) lcd.print("0");
+   // lcd.print(now.Minute(), DEC);
+   // lcd.print(':');
+   // if(now.Second()<10) lcd.print("0");
+   // lcd.print(now.Second(), DEC);
+   // lcd.print("   ");
+
+   // Read and Display DHT readings on the LCD
    float temperature = dht.readTemperature();
    float humidity = dht.readHumidity();
-
-   lcd.setCursor(0, 0);
-   lcd.print("Time: ");
-   if(now.Hour()<10) lcd.print("0");
-   lcd.print(now.Hour(), DEC);
-   lcd.print(':');
-   if(now.Minute()<10) lcd.print("0");
-   lcd.print(now.Minute(), DEC);
-   lcd.print(':');
-   if(now.Second()<10) lcd.print("0");
-   lcd.print(now.Second(), DEC);
-
-   // Display DHT readings on the LCD
    lcd.setCursor(0, 1);
    lcd.print("T: ");
    lcd.print(temperature);
-   lcd.print("C");
+   lcd.print("C ");
    lcd.setCursor(10, 1);
    lcd.print(" H: ");
    lcd.print(humidity);
-   lcd.print("%");
+   lcd.print("% ");
 
-   lcd.setCursor(0, 3);
+   // Read and Display Soil Sensor  h
+   for (int i = 0; i < 3; i++) soilReadings[i] = readSoilMoisture(i);
+   lcd.setCursor(0, 2);
    lcd.print("SOIL : ");
-   for (int i = 0; i < 3; i++) {
-      soilReadings[i] = readSoilMoisture(i);
-      lcd.print(soilReadings[i]);
-      if (i < 3) {
-         lcd.print(" ");
-      }
-   }
+   char soil_buff[14];
+   sprintf(soil_buff, "%d%% %d%% %d%%", soilReadings[0], soilReadings[1], soilReadings[2]);
+   String soil = String(soil_buff) + padding(13-strlen(soil_buff));
+   lcd.print(soil);
+
+   // for (int i = 0; i < 3; i++) {
+   //    soilReadings[i] = readSoilMoisture(i);
+   //    lcd.print(soilReadings[i]);
+   //    lcd.print("%");
+   //    if (i < 3) {
+   //       lcd.print(" ");
+   //    }
+   // }
+   // lcd.print("");
 
    // Check soil moisture and control relays
    for (int i = 0; i < 3; i++) {
       if (soilReadings[i] <= 30) {
          // Soil is too dry, activate the corresponding relay
-         digitalWrite(relayPin[i], HIGH);
-         digitalWrite(relayPin[3], HIGH);
+         digitalWrite(relayPin[i], LOW);
+         digitalWrite(relayPin[3], LOW);
       } else if (soilReadings[i] > desiredMoistureLevel){
          // Soil is moist enough, deactivate the corresponding relay
-         digitalWrite(relayPin[i], LOW);
+         digitalWrite(relayPin[i], HIGH);
       }
    }
 
    if(soilReadings[0] > desiredMoistureLevel && soilReadings[1] > desiredMoistureLevel && soilReadings[2] > desiredMoistureLevel){
-      digitalWrite(relayPin[3], LOW);
-   }  
+      digitalWrite(relayPin[3], HIGH);
+   }
+
+   // Serial.print(now.Hour());
+   // Serial.print(":");
+   // Serial.print(now.Minute());
+   // Serial.print(":");
+   // Serial.println(now.Second());
 
    // Control the new relay based on whether any other relay is ON
    // Other tasks or sensor readings can be added here
