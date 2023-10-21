@@ -17,7 +17,8 @@ int relayPin[5] = {14, 12, 13, 27, 26}; // Relay pins for each soil sensor, incl
 int soilPin[4] = {A0, A3, A6, A7};
 const int desiredMoistureLevel = 50; // Adjust the desired moisture level as needed
 
-int soilReadings[4]; // Array to store soil moisture readings
+int soilReadings[3]; // Array to store soil moisture readings
+bool valveOpen[3] = {false, false, false};
 
 int readSoilMoisture(int index) {
    // Read the analog value from the soil moisture sensor
@@ -39,13 +40,17 @@ void setup() {
    Serial.begin(115200);
    for(int i = 0; i < 4; i++){
       pinMode(relayPin[i], OUTPUT);
-      digitalWrite(relayPin[i], LOW);
+      // digitalWrite(relayPin[i], LOW);
       delay(250);
       digitalWrite(relayPin[i], HIGH);
-      delay(250);
+      // delay(250);
    }
    for(int i = 0; i < 3; i++){
       pinMode(soilPin[i], INPUT);
+   }
+
+   for(int i = 0; i < 3; i++){
+      valveOpen[i] = false;
    }
 
    Rtc.Begin();
@@ -117,16 +122,49 @@ void loop() {
    // lcd.print("");
 
    // Check soil moisture and control relays
-   for (int i = 0; i < 3; i++) {
-      if (soilReadings[i] <= 30) {
-         // Soil is too dry, activate the corresponding relay
-         digitalWrite(relayPin[i], LOW);
-         digitalWrite(relayPin[3], LOW);
-      } else if (soilReadings[i] > desiredMoistureLevel){
-         // Soil is moist enough, deactivate the corresponding relay
-         digitalWrite(relayPin[i], HIGH);
-      }
+   // for (int i = 0; i < 3; i++) {
+   //    if (soilReadings[i] <= 30) {
+   //       // Soil is too dry, activate the corresponding relay
+   //       digitalWrite(relayPin[i], LOW);
+   //       digitalWrite(relayPin[3], LOW);
+   //    } else if (soilReadings[i] > desiredMoistureLevel){
+   //       // Soil is moist enough, deactivate the corresponding relay
+   //       digitalWrite(relayPin[i], HIGH);
+   //    }
+   // }
+   if (soilReadings[0] <= 30 && valveOpen[1] == false && valveOpen[2] == false) {
+      // Soil is too dry, activate the corresponding relay
+      valveOpen[0] = true;
+      digitalWrite(relayPin[0], LOW);
+      digitalWrite(relayPin[3], LOW);
+   } else if (soilReadings[0] > desiredMoistureLevel){
+      // Soil is moist enough, deactivate the corresponding relay
+      digitalWrite(relayPin[0], HIGH);
+      valveOpen[0] = false;
    }
+
+   if (soilReadings[1] <= 30 && valveOpen[0] == false && valveOpen[2] == false) {
+      // Soil is too dry, activate the corresponding relay
+      valveOpen[1] = true;
+      digitalWrite(relayPin[1], LOW);
+      digitalWrite(relayPin[3], LOW);
+   } else if (soilReadings[1] > desiredMoistureLevel){
+      // Soil is moist enough, deactivate the corresponding relay
+      digitalWrite(relayPin[1], HIGH);
+      valveOpen[1] = false;
+   }
+
+   if (soilReadings[2] <= 30 && valveOpen[0] == false && valveOpen[1] == false) {
+      // Soil is too dry, activate the corresponding relay
+      valveOpen[2] = true;
+      digitalWrite(relayPin[2], LOW);
+      digitalWrite(relayPin[3], LOW);
+   } else if (soilReadings[2] > desiredMoistureLevel){
+      // Soil is moist enough, deactivate the corresponding relay
+      digitalWrite(relayPin[2], HIGH);
+      valveOpen[2] = false;
+   }
+   
 
    if(soilReadings[0] > desiredMoistureLevel && soilReadings[1] > desiredMoistureLevel && soilReadings[2] > desiredMoistureLevel){
       digitalWrite(relayPin[3], HIGH);
